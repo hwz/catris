@@ -1,16 +1,10 @@
 var canvas;
 var context;
-var size = 200;
+var size = 10;
+var speed = 500;
+var ticker = null;
 
-var tetris = {
-	currentShape = tetris.shapes.i;
-	//keep track of rotation (r)
-	//current (x,y) and next (x0,y0) positions, where x,y is the top left corner of the 4x4 grid
-
-	nextShape = tetris.shapes.i;
-	key = { space: 32, left: 37, up: 38, right: 39, down: 40 },
-
-	shapes: {
+var shapes = {
 		i: [[[0,'0/i_01.png',0,0],[0,'0/i_02.png',0,0],[0,'0/i_03.png',0,0],[0,'0/i_04.png',0,0]],
 			[[0,0,0,0],['90/i_04.png','90/i_03.png','90/i_02.png','90/i_01.png'],[0,0,0,0],[0,0,0,0]],
 			[[0,0,'180/i_04.png',0],[0,0,'180/i_03.png',0],[0,0,'180/i_02.png',0],[0,0,'180/i_01.png',0]],
@@ -20,19 +14,45 @@ var tetris = {
 			[['90/o_03.png','90/0_01.png',0,0],['90/o_04.png','90/o_02.png',0,0],[0,0,0,0],[0,0,0,0]],
 			[['180/o_04.png','180/0_03.png',0,0],['180/o_02.png','180/o_01.png',0,0],[0,0,0,0],[0,0,0,0]],
 			[['270/o_02.png','270/0_04.png',0,0],['270/o_01.png','270/o_03.png',0,0],[0,0,0,0],[0,0,0,0]]],
-	},
+	};
+var keyMap = { space: 32, left: 37, up: 38, right: 39, down: 40 };
+
+current = {
+		shape: shapes.i,
+		x: 4,
+		y: 0,
+		r: 0,
+		x0: 4,	//next pos
+		y0: 0, 	//next pos
+	};
+
+var tetris = {
+
+	timer: null,
+	//keep track of rotation (r)
+	//current (x,y) and next (x0,y0) positions, where x,y is the top left corner of the 4x4 grid
+
 	init: function() {
 		tetris.score = 0;
 		tetris.speed = 500; //ms per tick
-		tetris.matrix = [[1,0,0,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,0,0,1],
+		tetris.matrix = [[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
+			[1,0,0,0,0,0,0,0,0,0,0,1],
 			[1,1,1,1,1,1,1,1,1,1,1,1]];
 
 		var x,y;
@@ -51,12 +71,13 @@ var tetris = {
 		}
 	},
 	start: function() {
-		tetris.ticker = window.setInterval(tetris.tick, speed);
+		ticker = window.setInterval(tetris.tick, speed);
+		console.log('start game');
 	},
 	tick: function() {
 		console.log('tick');
-		move();
-		tetris.draw();
+		tetris.move();
+		tetris.update(current.r,current.x,current.y,current.x0,current.y0);
 	},
 	drop: function() {
 		//keypress: spacebar
@@ -68,7 +89,7 @@ var tetris = {
 	},
 	move: function() {
 		//left or right keypress
-		currentY++;
+		current.y0 = current.y + 1;
 	},
 	rotate: function() {
 
@@ -87,23 +108,40 @@ var tetris = {
 		var r = 1 + Math.random() * 7;
 		return shapes[parseInt(r > 7 ? 7 : r, 10)];
 	},
-	update: function(x,y,r) {
-		//updates positions of everything
-		for (m = 0; n < m; ++i) {
-			for (n = 0; n < 4; ++j) {
-				//iterate through each block of the 4x4
-				if (currentShape[r][n][m]) {	//if the 1x1 is nonzero
-					
+	update: function(r,x,y,x0,y0) {
+		//updates positions of current block
+		//(x0,y0) is new position 4x4
+		//(x,y) is old position 4x4
+		//r is its rotated state
+
+		//erases from old position
+		for (m = 3; m >= 0; m--) {	//row first (y=m)
+			for (n = 3; n >= 0; n--) {	//then column (x=n)
+				//iterate through each cell of the 4x4
+				if (current.shape[r][n][m]) {	//if the cell is nonzero for the shape
+					tetris.matrix[y+m][x+n] = 0; 
 				}
 			}
 		}
+		//puts in new position
+		for (m = 3; m >= 0; m--) {	//row first (y=m)
+			for (n = 3; n >= 0; n--) {	//then column (x=n)
+				//iterate through each cell of the 4x4
+				if (current.shape[r][n][m]) {	//if the cell is nonzero for the shape
+					tetris.matrix[y0+m][x0+n] = current.shape[r][n][m]; 
+					console.log('from ('+x+','+y+') to ('+x0+ ',' +y0+')');
+				}
+			}
+		}
+		current.y = current.y0;
+		current.x = current.x0;
 	},
 	refresh: function(){
 		//update score and gameboard
-		tetris.matrix
 	},
 	repaint: function(){
 		//maps cats to the matrix on canvas
+
 	}
 }
 var grid = {
@@ -116,8 +154,11 @@ $(document).ready(function(){
 	context = canvas.getContext('2d');
 	tetris.init();
 	$('#start').click(function(){
-		
+		tetris.start();
 	});
-	
+	$('#pause').click(function(){
+		window.clearInterval(ticker);
+		ticker = null;
+	})
 });
 
