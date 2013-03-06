@@ -4,11 +4,15 @@
 		<title> Catris -- tetris with cats</title>
 	</head>
 	<body>
-		<div id='tetris'>
-			<canvas id='game'>
+		<div id='game'>
+			<canvas id='grid' width='400' height='800'>
 			</canvas>
 		</div>
-	<script src='catris.js'></script>
-	<script src="ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<div id='controls'>
+			<button>start</button>
+		</div>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src='catris.js'></script>	
+
 	</body>
 </html>
