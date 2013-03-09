@@ -1,7 +1,7 @@
 var canvas;
 var context;
 var size = 30;
-var speed = 400;
+var speed = 500;
 var ticker = null;
 var gridcolor = '#eeeeee';
 
@@ -55,14 +55,10 @@ current = {
 
 var tetris = {
 	unpressed: true,
-	//keep track of rotation (r)
-	//current (x,y) and next (x0,y0) positions, where x,y is the top left corner of the 4x4 grid
-
+	score: 0,
+	lines: 0,
+	speed: 500, //ms per tick
 	init: function() {
-		context.strokeStyle = gridcolor;
-		context.lineWidth = 1;
-		tetris.score = 0;
-		tetris.speed = 500; //ms per tick
 		tetris.matrix = [[1,0,0,0,0,0,0,0,0,0,0,1],	//this is what happens when you're too lazy to check for bounds
 			[1,0,0,0,0,0,0,0,0,0,0,1],
 			[1,0,0,0,0,0,0,0,0,0,0,1],
@@ -84,21 +80,11 @@ var tetris = {
 			[1,0,0,0,0,0,0,0,0,0,0,1],
 			[1,0,0,0,0,0,0,0,0,0,0,1],
 			[1,1,1,1,1,1,1,1,1,1,1,1]];
-		var n;
-		for(n=.5;n<=canvas.width+.5;n+=size){
-			context.beginPath();
-			context.moveTo(n, 0);
-			context.lineTo(n, canvas.height);
-    		context.stroke();
-		}
-		for(n=.5;n<=canvas.height+.5;n+=size){
-			context.beginPath();
-			context.moveTo(0, n);
-			context.lineTo(canvas.width, n);
-    		context.stroke();
-		}
+		
 		tetris.nextShape();
 		tetris.nextShape();
+
+		tetris.drawGrid();
 
 		//init handlers
 		var key = { space: 32, left: 37, up: 38, right: 39, down: 40 };
@@ -123,10 +109,31 @@ var tetris = {
 			    		break;
 			    }
 			    tetris.unpressed = true;
-			    tetris.refresh();
+			    //tetris.refresh();
 			}
 
 		});
+	},
+	drawGrid: function() {
+		//context.fillStyle="#FFFFFF";
+		//context.fillRect(0,0,canvas.width,canvas.height);
+
+		context.strokeStyle = gridcolor;
+		context.lineWidth = 1;
+		
+		var n;
+		for(n=.5;n<=canvas.width+.5;n+=size){
+			context.beginPath();
+			context.moveTo(n, 0);
+			context.lineTo(n, canvas.height);
+    		context.stroke();
+		}
+		for(n=.5;n<=canvas.height+.5;n+=size){
+			context.beginPath();
+			context.moveTo(0, n);
+			context.lineTo(canvas.width, n);
+    		context.stroke();
+		}
 	},
 	start: function() {
 		ticker = window.setInterval(tetris.tick, speed);
@@ -135,7 +142,8 @@ var tetris = {
 	tick: function() {
 		console.log('tick');
 		tetris.down();
-		tetris.refresh();
+		//tetris.drawGrid();
+		//tetris.refresh();
 	},
 	drop: function() {
 		//keypress: spacebar
@@ -149,16 +157,17 @@ var tetris = {
 				//iterate through each cell of the 4x4
 				if (current.shape[current.r][m][n]) {	//if the cell is nonzero for the shape
 					tetris.matrix[current.y+m][current.x+n+1] = 0; 
-					//tetris.repaint(current.x+n,current.y+m);
+					tetris.repaint(current.x+n,current.y+m);
 				}
 			}
 		}
 	},
 	move: function(dir) {
 		//moves the block if there's no collision
-		tetris.removeSelf();
+		
 		var y0 = current.y;
 		var x0 = current.x + ((dir == "left") ? -1 : 1);
+		tetris.removeSelf();
 		if(tetris.canMove(current.r,x0,y0)){
 			current.x = x0;
 			current.y = y0;
@@ -175,10 +184,11 @@ var tetris = {
 			current.y = y0;
 		}
 		else{
-			if(--current.countdown == 0){
+			console.log("time to go");
+			if(--current.countdown <= 0){
 				tetris.update(current.r,current.x,current.y);
-				tetris.nextShape();
-
+				console.log(" under");
+				tetris.touchdown();
 			}
 		}
 		tetris.update(current.r,current.x,current.y);
@@ -192,7 +202,6 @@ var tetris = {
 				if( current.shape[r0][m][n] && tetris.matrix[y0 + m][x0 + n+1]){
 					console.log('i cant move');
 					return false;
-
 				}
 			}
 		}
@@ -208,12 +217,39 @@ var tetris = {
 		tetris.update(current.r,current.x,current.y);
 	},
 	touchdown: function() {
-
+		var m = 19;
+		while(m>0){
+			var n=10;
+			while(tetris.matrix[m][n]){
+				console.log("checking " + m + ',' + n);
+				n--;
+			}
+			if(n<=0){
+				//console.log(tetris.matrix[m]);
+				//console.log(tetris.matrix[m-1]);
+				tetris.clearLine(m, tetris.refresh);
+				tetris.lines++;
+				$('#numLines').html(tetris.lines);
+			}
+			else{
+				m--;
+			}
+		}
+		tetris.nextShape();
 	},
-	clearLine: function() {
-		//condition: bottom row is filled
-		//todo: move all pieces down one row
-		//		update score
+	clearLine: function(y, callback) {
+		console.log("clearing line "+y);
+		var m;
+		for(m=y;m>0;m--){
+			tetris.matrix[m]=tetris.matrix[m-1];
+		}
+
+		if (typeof callback !== "function") {
+        	callback = false;
+    	}
+    	else{
+    		callback();
+    	}
 	},
 	nextShape: function() {
 		//reset current shape
@@ -232,46 +268,58 @@ var tetris = {
 	update: function(r,x,y) {
 		//updates position of current block
 		var m,n;
-
 		for (m = 0; m < 4; m++) {	//row first (y=m)
 			for (n = 0; n < 4; n++) {	//then column (x=n)
 				//iterate through each cell of the 4x4
 				if (current.shape[r][m][n]) {	//if the cell is nonzero for the shape
 					tetris.matrix[y+m][x+n+1] = current.shape[r][m][n]; 
-					console.log('('+current.x+','+current.y+')');
-					//tetris.repaint(x+n,y+m,current.shape[r][m][n]);
+					tetris.repaint(x+n,y+m);
+					//console.log('('+current.x+','+current.y+')');
 				}
+				//tetris.repaint(x+n,y+m);
 			}
 		}
+		
+		var mm = (current.y > 0) ? (current.y - 1) : 0;
+		var nn = (current.x > 0) ? (current.x - 1) : 0;
+
+		// for(m = Math.max(current.y-1, 0); m < Math.min(current.y+4,20); m++){
+		// 	for(n = Math.max(current.x-1, 0); n< Math.min(current.x+4,20); n++){
+		// 		console.log("painting " + n + ","+ m);
+		// 		tetris.repaint(n,m);
+				
+		// 	}
+		// }
 	},
-	repaint: function(x,y,img_path){
+	repaint: function(x,y){
 		//maps cats to the matrix on canvas
 
-		context.strokeStyle = gridcolor;
-		context.lineWidth = 1;
-
-		if(!img_path){
-			context.clearRect(x*size+.5,y*size+.5,size,size);
+		//context.strokeStyle = gridcolor;
+		//context.lineWidth = 1;
+		if(!tetris.matrix[y][x+1] || tetris.matrix[y][x+1]==1){
 			context.strokeRect(x*size+.5,y*size+.5,size,size);
+			context.clearRect(x*size+.5,y*size+.5,size,size);
 		}
 		else{
-
-
+			context.clearRect(x*size+.5,y*size+.5,size,size);
 			var img = new Image();
-			img.src = 'img/'+img_path+'.png';
+			img.src = 'img/'+tetris.matrix[y][x+1]+'.png';
 			img.onload = function () {
 				context.drawImage(img, x*size, y*size, size, size);
 			};
 		}
+		
 	},
 	refresh: function(){
 		var m,n;
-		for (m = 0; m < 20; m++) {	//row first (y=m)
-			for (n = 0; n < 10; n++) {	//then column (x=n)
-				tetris.repaint(n,m,tetris.matrix[m][n+1]);
-
+		var count = 0;
+		for (m = 0; m < tetris.matrix.length; m++) {	//row first (y=m)
+			for (n = 0; n < tetris.matrix[0].length; n++) {	//then column (x=n)
+				tetris.repaint(n,m);
+				count++;
 			}
 		}
+		console.log("cleared "+count);
 	}
 }
 $(document).ready(function(){
