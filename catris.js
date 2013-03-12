@@ -4,7 +4,6 @@ var size = 30;
 var speed = 500;
 var ticker = null;
 var gridcolor = '#eeeeee';
-
 var shapes = {
 	i: [[['0/i_01',0,0,0],['0/i_02',0,0,0],['0/i_03',0,0,0],['0/i_04',0,0,0]],
 		[[0,0,0,0],['90/i_04','90/i_03','90/i_02','90/i_01'],[0,0,0,0],[0,0,0,0]],
@@ -40,9 +39,9 @@ var shapes = {
 		[[0,0,0,0],['90/z_04','90/z_02',0,0],[0,'90/z_03','90/z_01',0],[0,0,0,0]],
 		[[0,0,'180/z_04',0],[0,'180/z_03','180/z_02',0],[0,'180/z_01',0,0],[0,0,0,0]],
 		[[0,0,0,0],['270/z_01','270/z_03',0,0],[0,'270/z_02','270/z_04',0],[0,0,0,0]]],
-
 };
 
+var imgCache = {};
 
 current = {
 	shape: null,
@@ -52,6 +51,8 @@ current = {
 	countdown: 3,
 	next: null
 };
+
+var theQueue = $({}); 
 
 var tetris = {
 	unpressed: true,
@@ -90,29 +91,59 @@ var tetris = {
 		var key = { space: 32, left: 37, up: 38, right: 39, down: 40 };
 
 		$(document).keydown(function(e){
+			switch(e.keyCode){ //start and pause
+				case 80: //p or P
+				case 112: {
+					tetris.pause();
+					break;
+				}
+				case 83: //s or S
+				case 115: {
+					tetris.start();
+					break;
+				}
+			}
 			if(tetris.unpressed && ticker){
 			    switch(e.keyCode){
-			    	case 37: //left
-			    		tetris.move('left');
+			    	case 37: {//left
+			    		theQueue.queue(tetris.move('left'));
+			    		theQueue.dequeue();
 			    		break;
-			    	case 39: //right
-			    		tetris.move('right');
+			    	}
+			    	case 39: {//right
+			    		theQueue.queue(tetris.move('right'));
+			    		theQueue.dequeue();
 			    		break;
-			    	case 40: //down
+			    	}
+			    	case 40: {//down
+			    		theQueue.queue(tetris.down());
+			    		theQueue.dequeue();
+			    		break;
+			    	}
+			    	case 38: {//up
+			    		theQueue.queue(tetris.rotate());
+			    		theQueue.dequeue();
+			    		break;
+			    	}
+			    	case 37: {//space
 			    		tetris.down();
 			    		break;
-			    	case 38: //up
-			    		tetris.rotate();
-			    		break;
-			    	case 37: //space
+			    	}
+					case 37: {//space
 			    		tetris.down();
 			    		break;
+			    	}
 			    }
 			    tetris.unpressed = true;
-			    //tetris.refresh();
 			}
 
 		});
+	},
+	cacheMeUp: function(){
+		//cache me up, before you go-go
+		var img = new Image();
+		img.src = 'img/'+tetris.matrix[y][x+1]+'.png';
+		imgCache[tetris.matrix[y][x+1]] = img;
 	},
 	drawGrid: function() {
 		//context.fillStyle="#FFFFFF";
@@ -135,15 +166,10 @@ var tetris = {
     		context.stroke();
 		}
 	},
-	start: function() {
-		ticker = window.setInterval(tetris.tick, speed);
-		console.log('start game');
-	},
 	tick: function() {
 		console.log('tick');
-		tetris.down();
-		//tetris.drawGrid();
-		//tetris.refresh();
+		theQueue.queue(tetris.down());
+		
 	},
 	drop: function() {
 		//keypress: spacebar
@@ -187,11 +213,11 @@ var tetris = {
 			console.log("time to go");
 			if(--current.countdown <= 0){
 				tetris.update(current.r,current.x,current.y);
-				console.log(" under");
-				tetris.touchdown();
+				theQueue.queue(tetris.touchdown());
 			}
 		}
 		tetris.update(current.r,current.x,current.y);
+		theQueue.dequeue();
 	},
 	canMove: function(r0,x0,y0) {
 		//is someone in my way?
@@ -225,31 +251,36 @@ var tetris = {
 				n--;
 			}
 			if(n<=0){
-				//console.log(tetris.matrix[m]);
-				//console.log(tetris.matrix[m-1]);
-				tetris.clearLine(m, tetris.refresh);
+				tetris.clearLine(m);
 				tetris.lines++;
 				$('#numLines').html(tetris.lines);
+				m++;
 			}
-			else{
 				m--;
-			}
-		}
-		tetris.nextShape();
+				console.log("nextline"+m);
+				
+			
+    	}
+    	theQueue.queue(tetris.refresh());
+    	theQueue.queue(tetris.nextShape());
+    	
+    	theQueue.dequeue();
 	},
-	clearLine: function(y, callback) {
+	clearLine: function(y) {
 		console.log("clearing line "+y);
 		var m;
 		for(m=y;m>0;m--){
 			tetris.matrix[m]=tetris.matrix[m-1];
 		}
 
-		if (typeof callback !== "function") {
-        	callback = false;
-    	}
-    	else{
-    		callback();
-    	}
+		// if (typeof callback !== "function") {
+  //       	callback = false;
+  //   	}
+  //   	else{
+  //   		//callback
+  //   		callback();
+  //   	}
+
 	},
 	nextShape: function() {
 		//reset current shape
@@ -264,6 +295,8 @@ var tetris = {
 		var r = Math.floor( Math.random() * l);
 		var s = Object.keys(shapes)[r];
 		current.next = shapes[s];
+		console.log("next shape");
+		theQueue.dequeue();
 	},
 	update: function(r,x,y) {
 		//updates position of current block
@@ -296,18 +329,27 @@ var tetris = {
 
 		//context.strokeStyle = gridcolor;
 		//context.lineWidth = 1;
+
+		console.log("painting "+x+','+y);
 		if(!tetris.matrix[y][x+1] || tetris.matrix[y][x+1]==1){
 			context.strokeRect(x*size+.5,y*size+.5,size,size);
 			context.clearRect(x*size+.5,y*size+.5,size,size);
 		}
 		else{
 			context.clearRect(x*size+.5,y*size+.5,size,size);
-			var img = new Image();
-			img.src = 'img/'+tetris.matrix[y][x+1]+'.png';
-			img.onload = function () {
-				context.drawImage(img, x*size, y*size, size, size);
-			};
+			if(imgCache[tetris.matrix[y][x+1]]){
+				context.drawImage(imgCache[tetris.matrix[y][x+1]], x*size, y*size, size, size);
+			}
+			else{
+				var img = new Image();
+				img.src = 'img/'+tetris.matrix[y][x+1]+'.png';
+				img.onload = function () {
+					context.drawImage(img, x*size, y*size, size, size);
+					imgCache[tetris.matrix[y][x+1]] = img;
+				};	
+			}
 		}
+		theQueue.dequeue();
 		
 	},
 	refresh: function(){
@@ -315,11 +357,25 @@ var tetris = {
 		var count = 0;
 		for (m = 0; m < tetris.matrix.length; m++) {	//row first (y=m)
 			for (n = 0; n < tetris.matrix[0].length; n++) {	//then column (x=n)
-				tetris.repaint(n,m);
+				theQueue.queue(tetris.repaint(n,m));
 				count++;
 			}
 		}
 		console.log("cleared "+count);
+		theQueue.dequeue();
+		
+	},
+	start: function() {
+		ticker = window.setInterval(tetris.tick, speed);
+		console.log('start game');
+		$('#start')[0].disabled = true;
+		$('#pause')[0].disabled = false;
+	},
+	pause: function(){
+		window.clearInterval(ticker);
+		ticker = null;
+		$('#start')[0].disabled = false;
+		$('#pause')[0].disabled = true;
 	}
 }
 $(document).ready(function(){
@@ -331,14 +387,9 @@ $(document).ready(function(){
 	$('#pause')[0].disabled = true;
 	$('#start').click(function(){
 		tetris.start();
-		$('#start')[0].disabled = true;
-		$('#pause')[0].disabled = false;
 	});
 	$('#pause').click(function(){
-		window.clearInterval(ticker);
-		ticker = null;
-		$('#start')[0].disabled = false;
-		$('#pause')[0].disabled = true;
-	})
+		tetris.pause();
+	});
 });
 
