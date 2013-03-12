@@ -60,6 +60,7 @@ var tetris = {
 	lines: 0,
 	speed: 500, //ms per tick
 	init: function() {
+		tetris.cacheMeUp();
 		tetris.matrix = [[1,0,0,0,0,0,0,0,0,0,0,1],	//this is what happens when you're too lazy to check for bounds
 			[1,0,0,0,0,0,0,0,0,0,0,1],
 			[1,0,0,0,0,0,0,0,0,0,0,1],
@@ -125,12 +126,9 @@ var tetris = {
 			    		theQueue.dequeue();
 			    		break;
 			    	}
-			    	case 37: {//space
-			    		tetris.down();
-			    		break;
-			    	}
-					case 37: {//space
-			    		tetris.down();
+			    	case 32: {//space
+			    		theQueue.queue(tetris.drop());
+			    		theQueue.dequeue();
 			    		break;
 			    	}
 			    }
@@ -140,10 +138,18 @@ var tetris = {
 		});
 	},
 	cacheMeUp: function(){
-		//cache me up, before you go-go
-		var img = new Image();
-		img.src = 'img/'+tetris.matrix[y][x+1]+'.png';
-		imgCache[tetris.matrix[y][x+1]] = img;
+		//cache me up, before you go-go		
+		var rotations = ['0','90','180','270'];
+		for(var r = 0; r <= 3; r++){
+			for (var key in shapes) {
+				var obj = shapes[key];
+				for (var i = 1; i <= 4; i++){
+					var img = new Image();
+					img.src = 'img/'+rotations[r]+'/'+key+'_0'+i+'.png';
+					imgCache[rotations[r]+'/'+key+'_0'+i] = img;
+				}
+			}
+		}
 	},
 	drawGrid: function() {
 		//context.fillStyle="#FFFFFF";
@@ -169,12 +175,22 @@ var tetris = {
 	tick: function() {
 		console.log('tick');
 		theQueue.queue(tetris.down());
-		
 	},
 	drop: function() {
 		//keypress: spacebar
 		//drops a piece to end, if possible
-
+		console.log("drop");
+		tetris.removeSelf();
+		var x0 = current.x;
+		var y0 = current.y + 1;
+		while(tetris.canMove(current.r,x0,y0+1)){
+			var y0 = y0 + 1;	//how low can you go?
+			console.log(y0);
+		}
+		current.y = y0;	//this low
+		tetris.update(current.r,current.x,current.y);
+		current.countdown--;
+		theQueue.dequeue();
 	},
 	removeSelf: function() {
 		//erases from old position
@@ -190,7 +206,6 @@ var tetris = {
 	},
 	move: function(dir) {
 		//moves the block if there's no collision
-		
 		var y0 = current.y;
 		var x0 = current.x + ((dir == "left") ? -1 : 1);
 		tetris.removeSelf();
@@ -247,19 +262,17 @@ var tetris = {
 		while(m>0){
 			var n=10;
 			while(tetris.matrix[m][n]){
-				console.log("checking " + m + ',' + n);
 				n--;
 			}
 			if(n<=0){
 				tetris.clearLine(m);
 				tetris.lines++;
 				$('#numLines').html(tetris.lines);
-				m++;
 			}
-				m--;
+			else{
 				console.log("nextline"+m);
-				
-			
+				m--;
+			}
     	}
     	theQueue.queue(tetris.refresh());
     	theQueue.queue(tetris.nextShape());
@@ -267,19 +280,10 @@ var tetris = {
     	theQueue.dequeue();
 	},
 	clearLine: function(y) {
-		console.log("clearing line "+y);
 		var m;
 		for(m=y;m>0;m--){
 			tetris.matrix[m]=tetris.matrix[m-1];
 		}
-
-		// if (typeof callback !== "function") {
-  //       	callback = false;
-  //   	}
-  //   	else{
-  //   		//callback
-  //   		callback();
-  //   	}
 
 	},
 	nextShape: function() {
@@ -295,7 +299,6 @@ var tetris = {
 		var r = Math.floor( Math.random() * l);
 		var s = Object.keys(shapes)[r];
 		current.next = shapes[s];
-		console.log("next shape");
 		theQueue.dequeue();
 	},
 	update: function(r,x,y) {
@@ -329,8 +332,6 @@ var tetris = {
 
 		//context.strokeStyle = gridcolor;
 		//context.lineWidth = 1;
-
-		console.log("painting "+x+','+y);
 		if(!tetris.matrix[y][x+1] || tetris.matrix[y][x+1]==1){
 			context.strokeRect(x*size+.5,y*size+.5,size,size);
 			context.clearRect(x*size+.5,y*size+.5,size,size);
@@ -345,7 +346,7 @@ var tetris = {
 				img.src = 'img/'+tetris.matrix[y][x+1]+'.png';
 				img.onload = function () {
 					context.drawImage(img, x*size, y*size, size, size);
-					imgCache[tetris.matrix[y][x+1]] = img;
+					console.log('nooooooooo');
 				};	
 			}
 		}
