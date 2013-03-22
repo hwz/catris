@@ -3,21 +3,23 @@
 	<head>
 		<title> Catris -- tetris with cats</title>
 		<style type="text/css">
-  			canvas { border: 1px solid black; }
+  			.game { border: 1px solid black; position: absolute; }
   		</style>
 	</head>
 	<body>
-		<div id='game'>
-			<canvas id='grid' width='400' height='800'>
-			</canvas>
+		<div id='game' style= "width:300px; height:600px; margin-bottom:10px;">
+			<canvas id="bg" class="game" style="z-index: 0"></canvas>
+			<canvas id="fg" class="game" style="z-index: 10"></canvas>
+		</div>
+		<div>
+			<canvas id='next' style="border: 1px solid black;"></canvas>
 		</div>
 		<div id='controls'>
 			<button id='start'>start</button>
 			<button id='pause'>pause</button>
-			lines: <span id='numLines'>0</span>
+			lines: <span id='numLines'>0</span> score: <span id='numScore'>0</span>
 		</div>
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 		<script src='catris.js'></script>	
-
 	</body>
 </html>
