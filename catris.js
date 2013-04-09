@@ -50,7 +50,7 @@ current = {
 	x: 4,
 	y: 0,
 	r: 0,
-	countdown: 3,
+	countdown: 2,
 	next: null
 };
 
@@ -72,7 +72,7 @@ var tetris = {
 			x: 4,
 			y: 0,
 			r: 0,
-			countdown: 3,
+			countdown: 2,
 			next: null
 		};
 		
@@ -325,7 +325,7 @@ var tetris = {
 			current.x = 4;
 			current.y = 0;
 			current.r = 0;
-			current.countdown = 3;
+			current.countdown = 2;
 
 			//generates a new next shape
 			var l = Object.keys(shapes).length;
