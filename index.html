@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title> Catris -- tetris with cats</title>
+		<style type="text/css">
+  			.game { border: 1px solid black; position: absolute; }
+  		</style>
+  		<link rel="stylesheet" type="text/css" href="default.css">
+	</head>
+	<body>
+        <div id='game'>
+			<canvas id="bg" class="gameCanvas" style="z-index: 1"></canvas>
+			<canvas id="fg" class="gameCanvas" style="z-index: 10"></canvas>
+            <div id="blocker">
+                <img src="images/paused.png"/>
+            </div>
+            <div id="gameover">
+                <img src="images/gameover.png"/>
+            </div>
+        </div>
+        
+		<div id='controlBox'>
+			<div id='nextBlock'>
+				<canvas id='next' class="gameCanvas" width="120" height="120"></canvas>
+			</div>
+			<div id='controls'>
+				<button id='start'>start</button>
+				<button id='pause'>pause</button>
+                <button id='restart'>restart</button>
+				<br/><br/>
+				<p>level: <span id='numLevel'>1</span></p>
+				<p>score: <span id='numScore'>0</span></p>
+			</div>
+		</div>
+		<div id="directions">
+			<h5>Controls:</h5>
+			<p>Swipe or use the arrow keys to move the catblocks</p>
+			<p>Press S or P to start or pause the game</p>
+		</div>
+	    <div id='footer'>
+            <img src='images/footer.png' />
+	    </div>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="jquery-swipe.js"></script>
+		<script src='catris.js'></script>	
+	</body>
+</html>
