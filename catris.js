@@ -1,9 +1,10 @@
 var bgCanvas;
+var fgCanvas;
 var context;
+var fgContext;
 var nextCanvas;
 var nextContext;
 var size = 30;
-var speed = 500;
 var ticker = null;
 var gridcolor = '#eeeeee';
 var shapes = {
@@ -55,353 +56,426 @@ current = {
 };
 
 var tetris = {
-	unpressed: true,
-	score: 0,
-	lines: 0,
-	speed: 500, //ms per tick
+    unpressed: true,
+    score: 0,
+    lines: 0,
+    speed: 800, //ms per tick
+    level: 1,
 
+    init: function () {
+        tetris.score = 0;
+        tetris.lines = 0;
+        tetris.level = 1;
+        tetris.tetris = 800;
 
-	init: function() {
+        current = {
+            shape: null,
+            x: 4,
+            y: 0,
+            r: 0,
+            countdown: 2,
+            next: null
+        };
 
-		tetris.score = 0;
-		tetris.lines = 0;
-		tetris.speed = 500;
+        tetris.matrix = [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],	//this is what happens when you're too lazy to check for bounds
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+			[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]];
 
-		current = {
-			shape: null,
-			x: 4,
-			y: 0,
-			r: 0,
-			countdown: 2,
-			next: null
-		};
-		
-		tetris.matrix = [[1,0,0,0,0,0,0,0,0,0,0,1],	//this is what happens when you're too lazy to check for bounds
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,0,0,0,0,0,0,0,0,0,0,1],
-			[1,1,1,1,1,1,1,1,1,1,1,1]];
-		
-		tetris.nextShape();	//twice to set next as well as current shape
-		tetris.nextShape();
+        tetris.nextShape();	//twice to set next as well as current shape
+        tetris.nextShape();
 
-		tetris.drawGrid(bgCanvas);
-		tetris.drawGrid(nextCanvas);
+        tetris.drawGrid(bgCanvas);
+        tetris.drawGrid(fgCanvas);
+        tetris.drawGrid(nextCanvas);
+        
+        //init handlers
+        var key = { space: 32, left: 37, up: 38, right: 39, down: 40 };
 
-		//init handlers
-		var key = { space: 32, left: 37, up: 38, right: 39, down: 40 };
+        $(document).keydown(function (e) {
+            switch (e.keyCode) { //start and pause
+                case 80: //p or P
+                case 112: {
+                    tetris.pause();
+                    break;
+                }
+                case 83: //s or S
+                case 115: {
+                    tetris.start();
+                    break;
+                }
+            }
+        });
+    },
+    bindHandlers: function () {
+        $(document).swipe({
+            swipeLeft: function (event, direction, distance, duration, fingerCount) {
+                tetris.move('left');
+            },
+            swipeRight: function (event, direction, distance, duration, fingerCount) {
+                tetris.move('right');
+            },
+            swipeUp: function (event, direction, distance, duration, fingerCount) {
+                tetris.rotate();
+            },
+            swipeDown: function (event, direction, distance, duration, fingerCount) {
+                tetris.drop();
+            },
+        });
+        $(document).keydown(function (e) {
+            
+            if (tetris.unpressed && ticker) {
+                switch (e.keyCode) {
+                    case 37: {//left
+                        //tetris.removeSelf();
+                        tetris.move('left');
+                        break;
+                    }
+                    case 39: {//right
+                        //tetris.removeSelf();
+                        tetris.move('right');
 
-		$(document).keydown(function(e){
-			switch(e.keyCode){ //start and pause
-				case 80: //p or P
-				case 112: {
-					tetris.pause();
-					break;
-				}
-				case 83: //s or S
-				case 115: {
-					tetris.start();
-					break;
-				}
-			}
-			if(tetris.unpressed && ticker){
-			    switch(e.keyCode){
-			    	case 37: {//left
-			    		//tetris.removeSelf();
-			    		tetris.move('left');
-			    		break;
-			    	}
-			    	case 39: {//right
-			    		//tetris.removeSelf();
-			    		tetris.move('right');
-			    		
-			    		break;
-			    	}
-			    	case 40: {//down
-			    		//tetris.removeSelf();
-			    		tetris.down();
-			    		break;
-			    	}
-			    	case 38: {//up
-			    		//tetris.removeSelf();
-			    		tetris.rotate();
-			    		break;
-			    	}
-			    	case 32: {//space
-			    		//tetris.removeSelf();
-			    		tetris.drop();
-			    		break;
-			    	}
-			    }
-			    tetris.unpressed = true;
-			}
+                        break;
+                    }
+                    case 40: {//down
+                        //tetris.removeSelf();
+                        tetris.down();
+                        break;
+                    }
+                    case 38: {//up
+                        //tetris.removeSelf();
+                        tetris.rotate();
+                        break;
+                    }
+                    case 32: {//space
+                        //tetris.removeSelf();
+                        tetris.drop();
+                        break;
+                    }
+                }
+                tetris.unpressed = true;
+            }
 
-		});
-	},
-	cacheMeUp: function(){
-		//cache me up, before you go-go		
-		var rotations = ['0','90','180','270'];
-		for(var r = 0; r <= 3; r++){
-			for (var key in shapes) {
-				var obj = shapes[key];
-				for (var i = 1; i <= 4; i++){
-					var img = new Image();
-					img.src = 'img/'+rotations[r]+'/'+key+'_0'+i+'.png';
-					imgCache[rotations[r]+'/'+key+'_0'+i] = img;
-				}
-			}
-		}
-	},
-	draw: function() {
-		fgContext = fgCanvas.getContext('2d');
-		fgContext.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
-		for (m = 0; m < 4; m++) {	//row first (y=m)
-			for (n = 0; n < 4; n++) {	//then column (x=n)
-				//iterate through each cell of the 4x4
-				if (current.shape[current.r][m][n]) {	//if the cell is nonzero for the shape\\
-					fgContext.drawImage(imgCache[current.shape[current.r][m][n]], (current.x+n)*size, (current.y+m)*size, size, size);
-				}
-			}
-		}
-	},
-	drawGrid: function(c) {
-		//ctx.fillStyle="#FFFFFF";
-		//ctx.fillRect(0,0,canvas.width,canvas.height);
-		ctx = c.getContext('2d');
-		ctx.strokeStyle = gridcolor;
-		ctx.lineWidth = 1;
-		var n;
-		ctx.beginPath();
-		for(n=.5;n<=bgCanvas.width+.5;n+=size){
-			ctx.moveTo(n, 0);
-			ctx.lineTo(n, bgCanvas.height);		}
-		for(n=.5;n<=bgCanvas.height+.5;n+=size){
-			ctx.moveTo(0, n);
-			ctx.lineTo(bgCanvas.width, n);
-		}
-		ctx.stroke();
-	},
-	drawNext: function() {
-		nextContext = nextCanvas.getContext('2d');
-		nextContext.clearRect(0,0,nextCanvas.width, nextCanvas.height);
-		tetris.drawGrid(nextCanvas);
-		for (m = 0; m < 4; m++) {	//row first (y=m)
-			for (n = 0; n < 4; n++) {	//then column (x=n)
-				//iterate through each cell of the 4x4
-				if (current.next[0][m][n]) {	//if the cell is nonzero for the shape
-					nextContext.drawImage(imgCache[current.next[0][m][n]], n*size, m*size, size, size);
-				}
-			}
-		}
-	},
-	tick: function() {
-		console.log('tick');
-		tetris.down();
-	},
-	drop: function() {
-		//keypress: spacebar
-		//drops a piece to end, if possible
-		console.log("drop");
-		var x0 = current.x;
-		var y0 = current.y;
-		while(tetris.canMove(current.r,x0,y0+1)){
-			var y0 = y0 + 1;	//how low can you go?
-			console.log(y0);
-		}
-		current.y = y0;	//this low
-		tetris.draw(current.r,current.x, current.y);
-		current.countdown--;
-		 
-	},
-	removeSelf: function(r,x,y) {
-		//erases from old position
-		for (m = 0; m < 4; m++) {	//row first (y=m)
-			for (n = 0; n < 4; n++) {	//then column (x=n)
-				//iterate through each cell of the 4x4
-				if (current.shape[r][m][n]) {	//if the cell is nonzero for the shape
-					tetris.matrix[y+m][x+n+1] = 0; 
-					tetris.repaint(x+n,y+m);
-				}
-			}
-		}
-	},
-	move: function(dir) {
-		//moves the block if there's no collision
-		//tetris.removeSelf(current.r,current.x,current.y);
-		console.log("move "+dir);
-		var y0 = current.y;
-		var x0 = current.x + ((dir == "left") ? -1 : 1);
-		if(tetris.canMove(current.r,x0,y0)){
-			current.x = x0;
-			current.y = y0;
-		}
-		tetris.draw(current.r,current.x, current.y);
-	},
-	down: function() {
-		//moves the block if there's no collision
-		//tetris.removeSelf(current.r,current.x,current.y);
-		console.log("down");
-		var x0 = current.x;
-		var y0 = current.y + 1;
-		if(tetris.canMove(current.r,x0,y0)){
-			current.x = x0;
-			current.y = y0;
-		}
-		else{
-			if(--current.countdown <= 0){
-				tetris.touchdown(tetris.refresh);
-			}
-		}
-		tetris.draw(current.r,current.x, current.y);
-	},
-	canMove: function(r0,x0,y0) {
-		//is someone in my way?
-		var m,n;
-		for (m = 0; m < 4; m++) {
-			for (n = 0; n < 4; n++) {
-				if( current.shape[r0][m][n] && tetris.matrix[y0+m][x0+n+1]){
-					return false;
-				}
-			}
-		}
-		return true;
-	},
-	rotate: function() {
-		console.log('rotate');
-		var r0 = (current.r + 1) % 4;
-		
-		if(tetris.canMove(r0,current.x,current.y)){
-			current.r = r0;
-		}
-		tetris.draw(current.r,current.x, current.y);
-		 
-	},
-	touchdown: function(rf) {
-		console.log("touch down");
-		tetris.update(current.r,current.x, current.y, tetris.clearLines);
-    	tetris.nextShape();
-    	tetris.drawNext();
-    	tetris.updateGame();
-    	rf();
-	},
-	clearLines: function() {
-		var y = 19;
-		while(y>0){
-			if($.inArray(0,tetris.matrix[y]) == -1){
-				//line is full
-				tetris.matrix.splice(y, 1);
-				tetris.matrix.unshift([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
-				tetris.lines++;
-			}	
-			else{
-				y--;
-			}
-		}
-	},
-	updateGame: function() {
-		speed = speed*(1+tetris.lines/10);
-		$('#numLines').html(tetris.lines);
-	},
-	nextShape: function() {
-		if(!current.shape || tetris.canMove(0,4,0)){
-			//update the current shape
-			current.shape = current.next;
-			current.x = 4;
-			current.y = 0;
-			current.r = 0;
-			current.countdown = 2;
+        });
+    },
+    disableHandlers: function () {
+        $(document).unbind();
+        $(document).keydown(function (e) {
+            switch (e.keyCode) { //start and pause
+                case 80: //p or P
+                case 112: {
+                    tetris.pause();
+                    break;
+                }
+                case 83: //s or S
+                case 115: {
+                    tetris.start();
+                    break;
+                }
+            }
+        });
+    },
+    cacheMeUp: function () {
+        //cache me up, before you go-go		
+        var rotations = ['0', '90', '180', '270'];
+        for (var r = 0; r <= 3; r++) {
+            for (var key in shapes) {
+                var obj = shapes[key];
+                for (var i = 1; i <= 4; i++) {
+                    var img = new Image();
+                    img.src = 'images/' + rotations[r] + '/' + key + '_0' + i + '.png';
+                    imgCache[rotations[r] + '/' + key + '_0' + i] = img;
+                }
+            }
+        }
+    },
+    draw: function () {
+        fgContext = fgCanvas.getContext('2d');
+        fgContext.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
+        for (m = 0; m < 4; m++) {	//row first (y=m)
+            for (n = 0; n < 4; n++) {	//then column (x=n)
+                //iterate through each cell of the 4x4
+                if (current.shape[current.r][m][n]) {	//if the cell is nonzero for the shape\\
+                    fgContext.drawImage(imgCache[current.shape[current.r][m][n]], (current.x + n) * size, (current.y + m) * size, size, size);
+                }
+            }
+        }
+    },
+    drawGrid: function (c) {
+        //ctx.fillStyle="#FFFFFF";
+        //ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx = c.getContext('2d');
+        ctx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        ctx.strokeStyle = gridcolor;
+        ctx.lineWidth = 1;
+        var n;
+        ctx.beginPath();
+        for (n = .5; n <= bgCanvas.width + .5; n += size) {
+            ctx.moveTo(n, 0);
+            ctx.lineTo(n, bgCanvas.height);
+        }
+        for (n = .5; n <= bgCanvas.height + .5; n += size) {
+            ctx.moveTo(0, n);
+            ctx.lineTo(bgCanvas.width, n);
+        }
+        ctx.stroke();
+    },
+    drawNext: function () {
+        nextContext = nextCanvas.getContext('2d');
+        nextContext.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+        tetris.drawGrid(nextCanvas);
+        for (m = 0; m < 4; m++) {	//row first (y=m)
+            for (n = 0; n < 4; n++) {	//then column (x=n)
+                //iterate through each cell of the 4x4
+                if (current.next[0][m][n]) {	//if the cell is nonzero for the shape
+                    nextContext.drawImage(imgCache[current.next[0][m][n]], n * size, m * size, size, size);
+                }
+            }
+        }
+    },
+    tick: function () {
+        console.log('tick');
+        tetris.down();
+    },
+    drop: function () {
+        //keypress: spacebar
+        //drops a piece to end, if possible
+        console.log("drop");
+        var x0 = current.x;
+        var y0 = current.y;
+        while (tetris.canMove(current.r, x0, y0 + 1)) {
+            var y0 = y0 + 1;	//how low can you go?
+            console.log(y0);
+        }
+        current.y = y0;	//this low
+        tetris.draw(current.r, current.x, current.y);
+        current.countdown--;
 
-			//generates a new next shape
-			var l = Object.keys(shapes).length;
-			var r = Math.floor( Math.random() * l);
-			var s = Object.keys(shapes)[r];
-			current.next = shapes[s];
-		}
-		else{
-			tetris.pause();
-			alert("game over!");
-			tetris.init();
-		}
-	},
-	update: function(r,x,y, cl) {
-		//updates position of current block
-		console.log("update");
-		var m,n;
-		for (m = 0; m < 4; m++) {	//row first (y=m)
-			for (n = 0; n < 4; n++) {	//then column (x=n)
-				//iterate through each cell of the 4x4
-				if (current.shape[r][m][n]) {	//if the cell is nonzero for the shape
-					tetris.matrix[y+m][x+n+1] = current.shape[r][m][n]; 
-					console.log((y+m)+ ', '+(x+n)+' is ' + tetris.matrix[y+m][x+n+1]);
-					tetris.repaint(x+n,y+m);
-					//console.log('('+current.x+','+current.y+')');
-				}
-			}
-		}
-		cl();
-	},
-	repaint: function(x,y){
-		//maps cats to the matrix on canvas
-		context.strokeStyle = gridcolor;
-		context.lineWidth = 1;
-		if(!tetris.matrix[y][x+1] || tetris.matrix[y][x+1]==1){
-			context.clearRect(x*size,y*size,size,size);
-			context.strokeRect(x*size,y*size,size,size);
-		}
-		else{
-			context.clearRect(x*size,y*size,size,size);
-			if(imgCache[tetris.matrix[y][x+1]]){
-				//console.log('painted '+x+', '+y+ ' with '+tetris.matrix[y][x+1]);
-				context.drawImage(imgCache[tetris.matrix[y][x+1]], x*size, y*size, size, size);
-			}
-			else{
-				var img = new Image();
-				img.src = 'img/'+tetris.matrix[y][x+1]+'.png';
-				img.onload = function () {
-					context.drawImage(img, x*size, y*size, size, size);
-				};	
-			}
-		} 	
-	},
-	refresh: function(){
-		var m,n;
-		var count = 0;
-		for (m = 0; m < tetris.matrix.length; m++) {	//row first (y=m)
-			for (n = 0; n < tetris.matrix[0].length; n++) {	//then column (x=n)
-				tetris.repaint(n,m);
-				count++;
-			}
-		}
-	},
-	start: function() {
-		ticker = window.setInterval(tetris.tick, speed);
-		console.log('start game');
-		$('#start')[0].disabled = true;
-		$('#pause')[0].disabled = false;
-		tetris.drawNext();
-	},
-	pause: function(){
-		window.clearInterval(ticker);
-		ticker = null;
-		$('#start')[0].disabled = false;
-		$('#pause')[0].disabled = true;
-	}
+    },
+    removeSelf: function (r, x, y) {
+        //erases from old position
+        for (m = 0; m < 4; m++) {	//row first (y=m)
+            for (n = 0; n < 4; n++) {	//then column (x=n)
+                //iterate through each cell of the 4x4
+                if (current.shape[r][m][n]) {	//if the cell is nonzero for the shape
+                    tetris.matrix[y + m][x + n + 1] = 0;
+                    tetris.repaint(x + n, y + m);
+                }
+            }
+        }
+    },
+    move: function (dir) {
+        //moves the block if there's no collision
+        //tetris.removeSelf(current.r,current.x,current.y);
+        console.log("move " + dir);
+        var y0 = current.y;
+        var x0 = current.x + ((dir == "left") ? -1 : 1);
+        if (tetris.canMove(current.r, x0, y0)) {
+            current.x = x0;
+            current.y = y0;
+        }
+        tetris.draw(current.r, current.x, current.y);
+    },
+    down: function () {
+        //moves the block if there's no collision
+        //tetris.removeSelf(current.r,current.x,current.y);
+        console.log("down");
+        var x0 = current.x;
+        var y0 = current.y + 1;
+        if (tetris.canMove(current.r, x0, y0)) {
+            current.x = x0;
+            current.y = y0;
+        }
+        else {
+            if (--current.countdown <= 0) {
+                tetris.touchdown(tetris.refresh);
+            }
+        }
+        tetris.draw(current.r, current.x, current.y);
+    },
+    canMove: function (r0, x0, y0) {
+        //is someone in my way?
+        var m, n;
+        for (m = 0; m < 4; m++) {
+            for (n = 0; n < 4; n++) {
+                if (current.shape[r0][m][n] && tetris.matrix[y0 + m][x0 + n + 1]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    },
+    rotate: function () {
+        console.log('rotate');
+        var r0 = (current.r + 1) % 4;
+
+        if (tetris.canMove(r0, current.x, current.y)) {
+            current.r = r0;
+        }
+        tetris.draw(current.r, current.x, current.y);
+
+    },
+    touchdown: function (rf) {
+        console.log("touch down");
+        tetris.update(current.r, current.x, current.y, tetris.clearLines);
+        tetris.nextShape();
+        tetris.drawNext();
+        tetris.updateGame();
+        rf();
+    },
+    clearLines: function () {
+        var y = 19;
+        var numCleared = 0;
+        while (y > 0) {
+            if ($.inArray(0, tetris.matrix[y]) == -1) {
+                //line is full
+                tetris.matrix.splice(y, 1);
+                tetris.matrix.unshift([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+                numCleared++;
+            }
+            else {
+                y--;
+            }
+        }
+        if (numCleared) {
+            tetris.lines = tetris.lines + numCleared;
+            if (Math.floor(tetris.lines / 10) > tetris.level) {
+                tetris.level++;
+                tetris.speed * .9;
+            }
+            var multiplier;
+
+            switch (numCleared) {
+                case 1: multiplier = 40; break;
+                case 2: multiplier = 100; break;
+                case 3: multiplier = 300; break;
+                case 4: multiplier = 1200; break;
+            }
+
+            tetris.score = tetris.score + tetris.level * multiplier * numCleared;
+            window.clearInterval(ticker);
+            ticker = window.setInterval(tetris.tick, tetris.speed);
+        }
+
+    },
+    updateGame: function () {
+        $('#numLevel').html(tetris.level);
+        $('#numScore').html(tetris.score);
+    },
+    nextShape: function () {
+        if (!current.shape || tetris.canMove(0, 4, 0)) {
+            //update the current shape
+            current.shape = current.next;
+            current.x = 4;
+            current.y = 0;
+            current.r = 0;
+            current.countdown = 2;
+
+            //generates a new next shape
+            var l = Object.keys(shapes).length;
+            var r = Math.floor(Math.random() * l);
+            var s = Object.keys(shapes)[r];
+            current.next = shapes[s];
+        }
+        else {
+            tetris.pause();
+            $('#blocker')[0].style.display = 'none';
+            $('#gameover')[0].style.display = 'block';
+        }
+    },
+    update: function (r, x, y, cl) {
+        //updates position of current block
+        console.log("update");
+        var m, n;
+        for (m = 0; m < 4; m++) {	//row first (y=m)
+            for (n = 0; n < 4; n++) {	//then column (x=n)
+                //iterate through each cell of the 4x4
+                if (current.shape[r][m][n]) {	//if the cell is nonzero for the shape
+                    tetris.matrix[y + m][x + n + 1] = current.shape[r][m][n];
+                    //console.log((y + m) + ', ' + (x + n) + ' is ' + tetris.matrix[y + m][x + n + 1]);
+                    tetris.repaint(x + n, y + m);
+                    //console.log('('+current.x+','+current.y+')');
+                }
+            }
+        }
+        cl();
+    },
+    repaint: function (x, y) {
+        //maps cats to the matrix on canvas
+        context.strokeStyle = gridcolor;
+        context.lineWidth = 1;
+        if (!tetris.matrix[y][x + 1] || tetris.matrix[y][x + 1] == 1) {
+            context.clearRect(x * size, y * size, size, size);
+            context.strokeRect(x * size, y * size, size, size);
+        }
+        else {
+            context.clearRect(x * size, y * size, size, size);
+            if (imgCache[tetris.matrix[y][x + 1]]) {
+                //console.log('painted '+x+', '+y+ ' with '+tetris.matrix[y][x+1]);
+                context.drawImage(imgCache[tetris.matrix[y][x + 1]], x * size, y * size, size, size);
+            }
+            else {
+                var img = new Image();
+                img.src = 'img/' + tetris.matrix[y][x + 1] + '.png';
+                img.onload = function () {
+                    context.drawImage(img, x * size, y * size, size, size);
+                };
+            }
+        }
+    },
+    refresh: function () {
+        var m, n;
+        var count = 0;
+        for (m = 0; m < tetris.matrix.length; m++) {	//row first (y=m)
+            for (n = 0; n < tetris.matrix[0].length; n++) {	//then column (x=n)
+                tetris.repaint(n, m);
+                count++;
+            }
+        }
+    },
+    start: function () {
+        ticker = window.setInterval(tetris.tick, tetris.speed);
+        console.log('start game');
+        $('#start')[0].disabled = true;
+        $('#pause')[0].disabled = false;
+        $('#blocker')[0].style.display = 'none';
+        tetris.drawNext();
+        tetris.bindHandlers();
+    },
+    pause: function () {
+        window.clearInterval(ticker);
+        ticker = null;
+        $('#start')[0].disabled = false;
+        $('#pause')[0].disabled = true;
+        $('#blocker')[0].style.display = 'block';
+        tetris.disableHandlers();
+    },
+    restart: function () {
+        $('#blocker')[0].style.display = 'none';
+        $('#gameover')[0].style.display = 'none';
+        window.clearInterval(ticker);
+        $('#start')[0].disabled = false;
+        $('#pause')[0].disabled = true;
+        ticker = null;
+        tetris.init();
+    },
 }
 $(document).ready(function(){
 	tetris.cacheMeUp();
@@ -428,5 +502,7 @@ $(document).ready(function(){
 	$('#pause').click(function(){
 		tetris.pause();
 	});
+
+
 });
 

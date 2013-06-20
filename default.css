@@ -1,0 +1,112 @@
+﻿body {
+	background-image: url('images/bg.png');
+}
+
+@media screen and (-ms-view-state: fullscreen-landscape) {
+}
+
+@media screen and (-ms-view-state: filled) {
+}
+
+@media (-ms-view-state: snapped) {
+    #game {
+	    width:300px;
+	    height:600px;
+	    margin-top: 3%;
+	    background-color: white;
+    }
+    #controlBox {
+		float: left;
+		left:50%;
+		margin-left:30px;
+		top: 620px;
+    }
+	#controls {
+		position:relative;
+		left:-120px;
+		top: -30px;
+	}
+	#footer {
+		display: none;
+	}
+    #directions {
+        display:none;
+    }
+}
+
+@media screen and (-ms-view-state: fullscreen-portrait) {
+}
+
+#game {
+	width:300px;
+	height:600px;
+	position: absolute;
+	left: 50%;
+	margin-left: -150px;
+	margin-top: 3%;
+	float: left;
+	background-color: white;
+}
+
+.gameCanvas {
+	border: 1px solid black;
+    position: absolute;
+}
+
+#controlBox {
+	width: 120px;
+	position: absolute;
+	float: right;
+	right:50%;
+	margin-right: -300px;
+	margin-top: 3%;
+
+}
+
+#controls {
+	position: absolute;
+	margin-top: 30px;
+	width: 100px;
+	
+	
+}
+
+#controls > button {
+	margin: 0px 5px 5px 0px;
+}
+
+#nextBlock {
+	width: 120px;
+	height: 120px;
+	background-color: white;
+	
+}
+
+#footer {
+	position: absolute;
+	bottom: 3%;
+	left: 3%;
+}
+
+#blocker {
+    display: none;
+    z-index: 100;
+    left: 1px;
+    top: 1px;
+    position: absolute;
+}
+#gameover {
+    opacity:0.5;
+    display: none;
+    z-index: 1000;
+    left: 1px;
+    top: 1px;
+    position: absolute;
+}
+
+#directions {
+	position: absolute;
+	width: 200px;
+	bottom: 10%;
+	right: 5%;
+}
