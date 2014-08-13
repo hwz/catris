@@ -110,3 +110,6 @@
 	bottom: 10%;
 	right: 5%;
 }
+#restart {
+	display: none;
+}

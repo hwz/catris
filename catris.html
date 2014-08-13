@@ -8,10 +8,12 @@
   		<link rel="stylesheet" type="text/css" href="default.css">
 	</head>
 	<body>
-        <div id='game'>
-			<canvas id="bg" class="gameCanvas" style="z-index: 1"></canvas>
-			<canvas id="fg" class="gameCanvas" style="z-index: 10"></canvas>
-            <div id="blocker">
+        <div id='gameBox'>
+			<div id='game'>
+				<canvas id="bg" class="gameCanvas" style="z-index: 1"></canvas>
+				<canvas id="fg" class="gameCanvas" style="z-index: 10"></canvas>
+			</div>
+    		<div id="blocker">
                 <img src="images/paused.png"/>
             </div>
             <div id="gameover">
@@ -27,21 +29,15 @@
 				<button id='start'>start</button>
 				<button id='pause'>pause</button>
                 <button id='restart'>restart</button>
-				<br/><br/>
-				<p>level: <span id='numLevel'>1</span></p>
-				<p>score: <span id='numScore'>0</span></p>
+                <br/>
+				level: <span id='numLevel'>1</span>
+				<br/>
+				score: <span id='numScore'>0</span>
 			</div>
 		</div>
-		<div id="directions">
-			<h5>Controls:</h5>
-			<p>Swipe or use the arrow keys to move the catblocks</p>
-			<p>Press S or P to start or pause the game</p>
-		</div>
-	    <div id='footer'>
-            <img src='images/footer.png' />
-	    </div>
+
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-		<script src="jquery-swipe.js"></script>
-		<script src='catris.js'></script>	
+		<script src="jquery.touchSwipe.min.js"></script>
+		<script src='catris.js'></script>
 	</body>
 </html>
